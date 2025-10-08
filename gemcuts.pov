@@ -1,4 +1,4 @@
-/* gemcuts.pov version 1.0.1
+/* gemcuts.pov version 2.0-rc.1
  * Persistence of Vision Raytracer scene description file
  * POV-Ray Object Collection demo
  *
@@ -43,26 +43,28 @@
  *
  *   The file gemcuts_37.ini has the necessary options.
  *
- * Copyright (C) 2018, 2021 Richard Callwood III.  Some rights reserved.
- * This file is licensed under the terms of the CC-LGPL
- * a.k.a. the GNU Lesser General Public License version 2.1.
+ * Copyright (C) 2018 - 2025 Richard Callwood III.  Some rights reserved.
+ * This file is licensed under the terms of the GNU-LGPL.
  *
- * This library is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public
- * License version 2.1 as published by the Free Software Foundation.
+ * This library is free software: you can redistribute it and/or modify it
+ * under the terms of the GNU Lesser General Public License as published
+ * by the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
  * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  Please
- * visit https://www.gnu.org/licenses/old-licenses/lgpl-2.1.html for
- * the text of the GNU Lesser General Public License version 2.1.
+ * visit https://www.gnu.org/licenses/lgpl-3.0.html for the text
+ * of the GNU Lesser General Public License version 3.
  *
  * Vers.  Date         Comments
  * -----  ----         --------
  *        2017-May-09  Started.
  * 1.0    2018-Feb-27  Uploaded.
- * 1.0.1  2021-Oct-09  The POV-Ray version is auto-detected within a range, and
+ * 1.0.1  2021-Oct-09  The #version is preserved between 3.6 and 3.8, and
                        radiosity save/load settings are modified accordingly.
+ *        2025-Oct-07  A ruby is added with a cut by Richard Conley.
+ * 2.0    2025-Oct-07  The license is upgraded to LGPL 3.
  */
 #version max (3.6, min (3.8, version));
 // Note: POV-Ray 3.7 or later is strongly recommended.
@@ -109,6 +111,7 @@
 
 #include "colors.inc" // required by woodmaps.inc 3.6
 #include "consts.inc"
+#include "transforms.inc"
 #include "woods.inc"
 #include "gemcuts.inc"
 
@@ -186,7 +189,7 @@ global_settings
   #end // switch Pass
 }
 
-#declare V_FOCAL = <-0.1, 0.35, -0.75>;
+#declare V_FOCAL = <-0.1, 0.35, -0.95>;
 camera
 { #switch (Cam)
     #case (1) location <0, 0.35, -30> #break // level
@@ -194,7 +197,7 @@ camera
     #case (3) location <0, 15, 26> #break // rear
     #else location <0, 15, -26>
   #end
-  look_at <0, 0.35, 0>
+  look_at <0, 0.15, 0>
   right 4/3 * x
   angle (Cam = 2? 10: 6)
   #if (Quality = 3)
@@ -221,18 +224,21 @@ light_source
   spotlight falloff 180 radius 120 point_at V_LIGHT - y
   #if (Quality = 3)
     #declare RES = 5;
-   // See Area light idiosyncrasies in p.b.i for this formula:
+   // See Area light idiosyncrasies in p.b.i (October 2016) for this formula:
     #declare Size = 2 * RLIGHT * (RES - 1) / RES;
     area_light Size * x, Size * z, RES, RES
     adaptive 0 circular orient jitter
   #end
 }
 
+//----- Room -----
 box
 { -<180, 75, 180>, <180, 165, 180> hollow
   pigment { rgb 0.6 }
 }
 
+//----- Table top -----
+// slightly below the origin to avoid coincident surfaces
 cylinder
 { -0.001 * y, -2.5 * y, 45
   texture
@@ -273,21 +279,25 @@ cylinder
 #switch (Quality)
   #case (1) // No dispersion:
     #declare Diamond_IOR = 2.417; // spectral line D
-    #declare Emerald_IOR = 1.584; // green (IOR at D is 1.580)
+    #declare Emerald_IOR = 1.584; // green (IOR at D is 1.580, per ior.inc)
+    #declare Ruby_IOR = 1.763;    // red? (IOR at D is 1.766, per ior.inc)
     #break
   #case (2)
   #case (3) // IORs that correct for a bias in POV-Ray's dispersion algorithm:
     #declare Diamond_IOR = 2.430;
     #declare Emerald_IOR = 1.584;
+    #declare Ruby_IOR = 1.771;
     #break
 #end
 #declare Diamond_disp = 1.0184;
 #declare Emerald_disp = 1.0089;
+#declare Ruby_disp = 1.0102;
 // Without finish-level Fresnel, an average highlight for the IOR must be
 // estimated.  (With finish-level Fresnel, introduced in POV-Ray 3.8, this
 // value would be exactly 1.)
 #declare Diamond_hilite = 0.180;
 #declare Emerald_hilite = 0.0614;
+#declare Ruby_hilite = 0.0878;
 
 #switch (Quality)
   #case (1)
@@ -324,12 +334,32 @@ cylinder
         fade_power 1000
       }
     }
+    #declare m_Ruby = material
+    { texture
+      { pigment { rgbf 1 }
+        finish
+        { reflection { 0 1 fresnel } conserve_energy
+          specular SPECULAR_ALBEDO * Ruby_hilite
+          roughness ROUGHNESS
+        }
+      }
+      interior
+      { ior Ruby_IOR
+        #if (Quality != 1) dispersion Ruby_disp #end
+        fade_color rgb <0.91, 0.18, 0.49>
+        fade_distance 0.1
+        fade_power 1000
+      }
+    }
     #break
 
   #else
     #declare m_Diamond = material { texture { pigment { rgb 0.6 } } }
     #declare m_Emerald = material
     { texture { pigment { rgb <0.05, 0.30, 0.10> } }
+    }
+    #declare m_Ruby = material
+    { texture { pigment { rgb <0.3, 0.0, 0.02> } }
     }
 
 #end
@@ -351,6 +381,9 @@ cylinder
 #declare EPAV1 = 52;
 #declare EPAV2 = 46;
 #declare EPAV3 = 40;
+#declare ECROWN1 = 48;
+#declare ECROWN2 = 33;
+#declare ECROWN3 = 18;
 // Other emerald magic numbers:
 #declare ETABLE = 0.65;
 #declare ECORNER = 0.15;
@@ -361,6 +394,11 @@ cylinder
 #declare YEKEEL = 0.35; // height of the keel above the shank's inner surface
 #declare V_EBASE = <1.05, 0.30, 1.05>;
 #declare DEPRONG = 0.2;
+
+// Ruby magic numbers:
+#declare RSCALE = 2/3; // ruby scale factor
+#declare RPAV = 42;
+#declare RCROWN = 29;
 
 // Shank magic numbers:
 #declare RINNER = 1.0;
@@ -422,8 +460,8 @@ cylinder
 
 #declare Emerald_ring = union
 { #declare Stone = Gem_Emerald_cut
-  ( EASPECT, ETABLE, ECORNER, 48, 33, 18, EPAV1, EPAV2, EPAV3, 0, EGIRDLE,
-    ECULET
+  ( EASPECT, ETABLE, ECORNER, ECROWN1, ECROWN2, ECROWN3, EPAV1, EPAV2, EPAV3,
+    0, EGIRDLE, ECULET
   )
   #declare hPavilion = Gem_fn_3Step_height (ECULET, EPAV1, EPAV2, EPAV3);
   #declare aProng = degrees (atan2 (EASPECT - ECORNER, 1 - ECORNER));
@@ -466,6 +504,12 @@ cylinder
   }
 }
 
+#declare Ruby = object
+{ Gem_Conley (RCROWN, RPAV)
+  material { m_Ruby }
+  photons { target collect off refraction on reflection on }
+}
+
 //-------------- Object Placement ----------------
 
 // Rotates a ring about an outer rim of the shank (which has a circular cross
@@ -484,13 +528,27 @@ cylinder
 
 object
 { Lay (Emerald_ring, 84.708)
-  rotate 170 * y
-  translate <-1.1, 0, 1.9>
+//  rotate 170 * y
+//  translate <-1.1, 0, 1.9>
+  rotate 175 * y
+  translate <-1.0, 0, 1.9>
 }
 object
 { Lay (Diamond_ring, 86.405)
-  rotate -140 * y
-  translate <2.1, 0, 1.0>
+//  rotate -140 * y
+//  translate <2.1, 0, 1.0>
+  rotate -150 * y
+  translate <2.0, 0, 1.1>
+}
+// Find the normal to a ruby pavilion facet:
+#declare v_Axis = <0,0,0>;
+#declare Dummy = trace (Ruby, <-0.1, 0, -0.2>, y, v_Axis);
+object
+{ Ruby
+  Reorient_Trans (v_Axis, -y) // Rest on a pavilion facet
+  scale RSCALE
+  rotate 15 * y
+  translate <-0.1, 0, -1.1>
 }
 
 // end of gemcuts.pov

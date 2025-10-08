@@ -1,22 +1,22 @@
-/* gemcuts.inc version 1.0.1
+/* gemcuts.inc version 2.0-rc.1
  * Persistence of Vision Raytracer include file
  * POV-Ray Object Collection
  *
  * Gem cuts and accessories.
  *
- * Copyright (C) 2018, 2021 Richard Callwood III.  Some rights reserved.
- * This file is licensed under the terms of the CC-LGPL
- * a.k.a. the GNU Lesser General Public License version 2.1.
+ * Copyright (C) 2018 - 2025 Richard Callwood III.  Some rights reserved.
+ * This file is licensed under the terms of the GNU-LGPL.
  *
- * This library is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public
- * License version 2.1 as published by the Free Software Foundation.
+ * This library is free software: you can redistribute it and/or modify it
+ * under the terms of the GNU Lesser General Public License as published
+ * by the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
  * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  Please
- * visit https://www.gnu.org/licenses/old-licenses/lgpl-2.1.html for
- * the text of the GNU Lesser General Public License version 2.1.
+ * visit https://www.gnu.org/licenses/lgpl-3.0.html for the text
+ * of the GNU Lesser General Public License version 3.
  *
  * Vers.  Date         Comments
  * -----  ----         --------
@@ -27,18 +27,22 @@
  *                     (point vector).
  *        2021-Jul-28  More numerically stable control points are used for the
  *                     shank Bezier lathe.
- * 1.0.1  2021-Oct-09  The POV-Ray version is auto-detected within a range.
+ * 1.0.1  2021-Oct-09  The #version is preserved between 3.6 and 3.8.
+ *        2025-Oct-07  A additional cut is added to the library in a separate
+ *                     file, gemcuts_conley.inc.
+ * 2.0    2025-Oct-07  The license is upgraded to LGPL 3.
  *
  * Implementation note: due to POV-Ray namespace scope leakage, local variables
  * and function parameters (other than x, y, and z) *must* be prefixed.
  */
 #ifndef (GemCuts_Inc_Temp) #declare GemCuts_Inc_Temp = version;
 #version max (3.6, min (3.8, version));
-#declare GEMCUTS_VERSION = 1.01;
+#declare GEMCUTS_VERSION = 2.0;
 #ifdef (View_POV_Include_Stack)
-  #debug "#include \"gemcuts.inc\" //version 1.0.1\n"
+  #debug "#include \"gemcuts.inc\" //version 2.0-rc.1\n"
 #end
 
+#include "gemcuts_conley.inc"
 #include "shapes.inc"
 
 //============================= PRIVATE FEATURES ===============================
